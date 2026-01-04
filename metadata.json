@@ -1,0 +1,5 @@
+{
+  "name": "菜单海报生成器",
+  "description": "Professional elevator poster generator for He Feng Lou restaurant. Supports Midjourney prompt generation and direct AI rendering via NANO BANANA models.",
+  "requestFramePermissions": []
+}
