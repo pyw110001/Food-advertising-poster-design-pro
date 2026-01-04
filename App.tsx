@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   AppMode, 
   LayoutType, 
@@ -13,7 +13,7 @@ import LayoutPreview from './components/LayoutPreview';
 import DishInputForm from './components/DishInputForm';
 import ImageEditForm from './components/ImageEditForm';
 import ResultArea from './components/ResultArea';
-import { Settings, Archive, Palette, ChefHat, Image as ImageIcon, Zap, AlertTriangle, RefreshCw, Moon, Sun, Key, PenTool } from 'lucide-react';
+import { Settings, Archive, Palette, ChefHat, Image as ImageIcon, Zap, AlertTriangle, RefreshCw, Moon, Sun, Key, PenTool, Upload, X } from 'lucide-react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 
@@ -35,6 +35,10 @@ export default function App() {
   const [editInstruction, setEditInstruction] = useState<string>('');
   const [sourceRatio, setSourceRatio] = useState<string>('1:1');
   
+  // New: Reference Image for Generation
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
+
   // Results
   const [results, setResults] = useState<GeneratedItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -147,6 +151,19 @@ export default function App() {
     return customStyle.trim() ? customStyle : (preset?.promptSegment || '');
   };
 
+  const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setReferenceImage(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   const handleGenerate = async () => {
     // If Nano Banana mode or Image Edit mode, check API Key first
     if ((mode === AppMode.NANO_BANANA || mode === AppMode.IMAGE_EDIT) && !hasApiKey) {
@@ -226,7 +243,8 @@ export default function App() {
 
       if (mode === AppMode.NANO_BANANA) {
         try {
-          const base64Image = await generatePosterImage(prompt, config.resolution);
+          // Added referenceImage parameter here
+          const base64Image = await generatePosterImage(prompt, config.resolution, referenceImage);
           if (base64Image) {
              setResults(prev => prev.map(item => 
                item.id === newItemId ? { ...item, status: 'success', imageUrl: base64Image } : item
@@ -269,13 +287,10 @@ export default function App() {
              let base64Image: string | null = null;
              
              if (item.mode === AppMode.IMAGE_EDIT && sourceImage) {
-                // If regenerating an edit, we need the source image.
-                // NOTE: If user changed the source image in the UI, this might use the NEW source image with OLD prompt.
-                // Ideally, we should store source image in GeneratedItem, but that blows up localStorage.
-                // We'll rely on current UI state for regeneration of edits for now.
                 base64Image = await editPosterImage(sourceImage, prompt, sourceRatio);
              } else {
-                base64Image = await generatePosterImage(prompt, config.resolution);
+                // Pass reference image here as well if available
+                base64Image = await generatePosterImage(prompt, config.resolution, referenceImage);
              }
 
              setResults(prev => prev.map(res => 
@@ -431,6 +446,46 @@ export default function App() {
                             className="w-full text-xs p-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded focus:border-brand-500 outline-none placeholder-gray-400 dark:placeholder-gray-500"
                         />
                     </div>
+                    
+                    {/* Reference Image Upload (Visible in Nano Banana Mode) */}
+                    {mode === AppMode.NANO_BANANA && (
+                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-600">
+                             <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 block flex items-center justify-between">
+                                 <span>Ref Image (Style)</span>
+                                 {referenceImage && (
+                                     <button onClick={() => setReferenceImage(null)} className="text-red-500 hover:text-red-700">
+                                         <X className="w-3 h-3" />
+                                     </button>
+                                 )}
+                             </label>
+                             {!referenceImage ? (
+                                 <button 
+                                    onClick={() => referenceInputRef.current?.click()}
+                                    className="w-full py-3 bg-gray-50 dark:bg-gray-700/50 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition flex items-center justify-center space-x-1"
+                                 >
+                                     <Upload className="w-3 h-3" />
+                                     <span>Upload Reference</span>
+                                 </button>
+                             ) : (
+                                 <div className="relative group">
+                                     <img src={referenceImage} alt="Ref" className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-600" />
+                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                         <button 
+                                            onClick={() => referenceInputRef.current?.click()}
+                                            className="text-white text-xs underline"
+                                         >Change</button>
+                                     </div>
+                                 </div>
+                             )}
+                             <input 
+                                ref={referenceInputRef}
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={handleReferenceImageUpload} 
+                             />
+                        </div>
+                    )}
                 </div>
             </section>
             )}

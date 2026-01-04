@@ -78,7 +78,11 @@ export const getDishSuggestions = async (currentName: string): Promise<Partial<D
   }
 };
 
-export const generatePosterImage = async (prompt: string, resolution: 'standard' | 'hd'): Promise<string | null> => {
+export const generatePosterImage = async (
+  prompt: string, 
+  resolution: 'standard' | 'hd',
+  referenceImage?: string | null
+): Promise<string | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
   if (!process.env.API_KEY) throw new Error("API Key missing");
@@ -99,10 +103,31 @@ export const generatePosterImage = async (prompt: string, resolution: 'standard'
   imageConfig.imageSize = resolution === 'hd' ? "2K" : "1K";
   
   try {
+    const parts: any[] = [];
+    
+    // Add reference image if provided (Style transfer / Reference)
+    if (referenceImage) {
+        const mimeTypeMatch = referenceImage.match(/^data:([^;]+);base64,/);
+        const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/png';
+        const cleanBase64 = referenceImage.replace(/^data:([^;]+);base64,/, '');
+        
+        parts.push({
+            inlineData: {
+                data: cleanBase64,
+                mimeType: mimeType
+            }
+        });
+        
+        // Append instruction to prompt to ensure the model knows to use the image as reference
+        prompt = `(Reference the visual style, lighting, and color palette of the provided image) ${prompt}`;
+    }
+
+    parts.push({ text: prompt });
+
     const response = await ai.models.generateContent({
       model: model,
       contents: {
-        parts: [{ text: prompt }]
+        parts: parts
       },
       config: {
         imageConfig: imageConfig
@@ -110,9 +135,9 @@ export const generatePosterImage = async (prompt: string, resolution: 'standard'
     });
 
     // Extract image
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (parts) {
-      for (const part of parts) {
+    const responseParts = response.candidates?.[0]?.content?.parts;
+    if (responseParts) {
+      for (const part of responseParts) {
         if (part.inlineData && part.inlineData.data) {
           return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         }
