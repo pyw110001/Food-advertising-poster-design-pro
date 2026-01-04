@@ -28,8 +28,8 @@ const ResultArea: React.FC<ResultAreaProps> = ({ mode, items, onDelete, onRegene
 
   if (items.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+      <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl transition-colors">
+        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 transition-colors">
             <Sparkles className="w-8 h-8 text-gray-300 dark:text-gray-600" />
         </div>
         <p className="text-center font-medium">No results yet.</p>
@@ -51,8 +51,8 @@ const ResultArea: React.FC<ResultAreaProps> = ({ mode, items, onDelete, onRegene
           </div>
 
           <div className="p-4">
-            {/* Nano Banana Image Mode */}
-            {mode === AppMode.NANO_BANANA && (
+            {/* Image Mode Rendering (Nano Banana or Image Edit) */}
+            {(item.mode === AppMode.NANO_BANANA || item.mode === AppMode.IMAGE_EDIT) && (
                 <div className="mb-4">
                     {item.status === 'pending' && (
                         <div className="aspect-[11/24] w-full bg-gray-100 dark:bg-gray-700 animate-pulse rounded flex items-center justify-center">
@@ -90,8 +90,8 @@ const ResultArea: React.FC<ResultAreaProps> = ({ mode, items, onDelete, onRegene
                 </div>
             )}
 
-            {/* Prompt Text (Visible in both modes) */}
-            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded text-xs font-mono text-gray-600 dark:text-gray-300 break-words max-h-32 overflow-y-auto border border-gray-100 dark:border-gray-700">
+            {/* Prompt Text (Visible in all modes) */}
+            <div className="bg-gray-50 dark:bg-gray-950 p-3 rounded text-xs font-mono text-gray-600 dark:text-gray-300 break-words max-h-32 overflow-y-auto border border-gray-100 dark:border-gray-700 transition-colors">
                 {item.fullPrompt}
             </div>
 
@@ -104,15 +104,14 @@ const ResultArea: React.FC<ResultAreaProps> = ({ mode, items, onDelete, onRegene
                     <Copy className="w-3 h-3" />
                     <span>Copy Prompt</span>
                 </button>
-                {mode === AppMode.MIDJOURNEY && (
-                    <button 
-                        onClick={() => onRegenerate(item)}
-                        className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 bg-brand-50 dark:bg-brand-900/20 hover:bg-brand-100 dark:hover:bg-brand-900/40 text-brand-700 dark:text-brand-300 rounded text-xs transition"
-                    >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Regenerate</span>
-                    </button>
-                )}
+                {/* Show Regenerate for all modes now, since App.tsx handles it */}
+                <button 
+                    onClick={() => onRegenerate(item)}
+                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 bg-brand-50 dark:bg-brand-900/20 hover:bg-brand-100 dark:hover:bg-brand-900/40 text-brand-700 dark:text-brand-300 rounded text-xs transition"
+                >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Regenerate</span>
+                </button>
             </div>
           </div>
         </div>

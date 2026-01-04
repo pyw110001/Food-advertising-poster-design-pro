@@ -124,3 +124,60 @@ export const generatePosterImage = async (prompt: string, resolution: 'standard'
     throw error;
   }
 };
+
+export const editPosterImage = async (
+  base64Image: string, 
+  instruction: string, 
+  aspectRatio: string
+): Promise<string | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
+  if (!process.env.API_KEY) throw new Error("API Key missing");
+
+  const model = 'gemini-3-pro-image-preview';
+
+  // Parse mimeType from base64 string
+  // Format: data:image/png;base64,.....
+  const mimeTypeMatch = base64Image.match(/^data:([^;]+);base64,/);
+  const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/png';
+  const cleanBase64 = base64Image.replace(/^data:([^;]+);base64,/, '');
+
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: instruction,
+          },
+        ],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: aspectRatio, // "1:1", "3:4", "4:3", "9:16", "16:9"
+          imageSize: "2K" // Use high quality for edits
+        }
+      }
+    });
+
+    // Extract image
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.data) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Image editing error:", error);
+    throw error;
+  }
+};

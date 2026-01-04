@@ -1,6 +1,7 @@
 export enum AppMode {
   MIDJOURNEY = 'midjourney',
-  NANO_BANANA = 'nano_banana'
+  NANO_BANANA = 'nano_banana',
+  IMAGE_EDIT = 'image_edit'
 }
 
 export enum LayoutType {

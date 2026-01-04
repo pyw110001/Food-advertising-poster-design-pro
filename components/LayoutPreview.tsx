@@ -11,7 +11,8 @@ const LayoutPreview: React.FC<LayoutPreviewProps> = ({ layout, selected, onClick
   const getSVG = () => {
     // In dark mode, we want the wireframe to be visible.
     // activeClass determines the stroke color.
-    const activeClass = selected ? "text-brand-500" : "text-gray-300 dark:text-gray-600";
+    // Adjusted inactive color to text-gray-400 for better visibility on dark bg
+    const activeClass = selected ? "text-brand-500" : "text-gray-300 dark:text-gray-500";
     
     // Fill colors usually need to be subtle.
     
